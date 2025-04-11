@@ -532,7 +532,7 @@
     renderMenu();
     async function runTicketScript() {
       try {
-        const res = await fetch('http://localhost:5001/run-ticket', {
+        const res = await fetch('https://ntnu-team-comp-app-ui.onrender.com/run-ticket', {
           method: 'POST'
         });
         const data = await res.json();
