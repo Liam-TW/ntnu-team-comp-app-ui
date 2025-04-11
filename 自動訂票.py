@@ -1,4 +1,5 @@
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import Select
 import time
 from datetime import datetime
@@ -6,7 +7,13 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-driver = webdriver.Chrome()
+options = Options()
+options.add_argument("--headless")
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
+options.add_argument("--disable-gpu")
+options.add_argument("--user-data-dir=/tmp/chrome_user_data")
+driver = webdriver.Chrome(options=options)
 driver.get("https://order.kingbus.com.tw/ORD/ORD_M_1510_OrderGo.aspx")
 
 # 填入基本資料
