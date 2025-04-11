@@ -4,3 +4,4 @@ selenium==4.18.1
 undetected-chromedriver==3.5.5
 flask-cors
 webdriver-manager
+
