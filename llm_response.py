@@ -2,7 +2,7 @@ import pandas as pd
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
-import openai
+from openai import OpenAI
 
 # 讀取 .env 檔案中的環境變數
 load_dotenv()
@@ -13,7 +13,7 @@ if not OPENAI_API_KEY:
     raise ValueError("API Key not found! Please check your .env file.")
 
 # 初始化 OpenAI 客戶端
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI()  # ✅ 不需要傳 api_key，它會自動從環境變數讀取
 
 # 預設的系統提示
 DEFAULT_PROMPT = """
