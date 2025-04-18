@@ -2,18 +2,12 @@ import pandas as pd
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
-from openai import OpenAI
 
 # 讀取 .env 檔案中的環境變數
 load_dotenv()
 
-# 從環境變數讀取 API 金鑰
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-if not OPENAI_API_KEY:
-    raise ValueError("API Key not found! Please check your .env file.")
-
 # 初始化 OpenAI 客戶端
-client = OpenAI()  # ✅ 不需要傳 api_key，它會自動從環境變數讀取
+client = OpenAI()
 
 # 預設的系統提示
 DEFAULT_PROMPT = """
@@ -157,7 +151,7 @@ def get_assistant_reply(user_query, member_name="liam"):
         )
         reply_text = completion.choices[0].message.content.strip()
 
-        response = openai.audio.speech.create(
+        response = client.audio.speech.create(
             model="tts-1",
             voice="echo",
             input=reply_text
