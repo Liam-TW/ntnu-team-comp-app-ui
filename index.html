@@ -66,6 +66,29 @@
       height: 100%;
       z-index: 2;
     }
+    #voiceText {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      z-index: 10;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      opacity: 0;
+      padding: 1em;
+      box-sizing: border-box;
+      text-align: center;
+      line-height: 1.4;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
     .hotspot {
       position: absolute;
       background: transparent;
@@ -139,7 +162,7 @@
           <img src="./images/首頁step1.png">
           <div class="hotspot-layer">
             <!-- ✅ 精準貼合圖片座標 -->
-            <button class="hotspot" style="top: 62%; left: 48%; width: 42%; height: 18%; transform: translate(-50%, -50%);" onclick="startRecognition()"></button>
+            <button class="hotspot" style="top: 62%; left: 48%; width: 42%; height: 18%; transform: translate(-50%, -50%);" onclick="startAssistant()"></button>
 
             <button class="hotspot" style="bottom: 10%; left: 50%; width: 80%; height: 6%; transform: translate(-50%, -50%);" onclick="show('確認地點頁面')"></button>
             <button class="hotspot" style="bottom: 2.5%; left: 15.5%; width: 12%; height: 6%; transform: translateX(-50%);" onclick="show('身分配對-家人畫面')"></button>
@@ -149,9 +172,10 @@
           </div>
 
           <!-- ✅ 語音提示區 -->
-          <p id="voiceText" style="position: absolute; bottom: 22%; left: 48%; transform: translateX(-50%); background: rgba(0,0,0,0.6); color: white; padding: 6px 12px; border-radius: 8px; font-size: 0.9rem; z-index: 10;">
-            點上方麥克風說出目的地
-          </p>
+          <div id="voiceText">
+            <!-- 初始為隱藏狀態 -->
+              <span id="voiceMessage" style="text-align: center; word-break: break-word;">語音提示</span>
+          </div>
         </div>
 
 
@@ -376,16 +400,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
         <div class="screen-content" id="step3-1-1計程車-家人版">
           <img src="./images/step3-1-1計程車-家人版.png">
           <div class="hotspot-layer">
@@ -486,7 +500,11 @@
       menus[currentMode].forEach(item => {
         const btn = document.createElement('button');
         btn.textContent = item.label;
-        btn.onclick = () => show(item.id);
+        btn.onclick = () => {
+          show(item.id);
+          // 若為語音助理結束後導引的畫面，自動捲動至螢幕頂部
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
         container.appendChild(btn);
       });
     }
@@ -505,43 +523,94 @@
       if (target) target.style.display = 'block';
     }
 
-    // ✅ 語音辨識
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = 'zh-TW';
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    // Debug log
-    recognition.onspeechstart = () => console.log("🎙️ 偵測到開始說話");
-    recognition.onspeechend = () => console.log("🔇 偵測到結束說話");
-    recognition.onstart = () => console.log("🚀 語音辨識開始");
-    recognition.onend = () => console.log("🛑 語音辨識結束");
-
-    function startRecognition() {
-      recognition.start();
-      document.getElementById("voiceText").textContent = "🎙️ 語音輸入中，請說出目的地...";
-    }
-
-    recognition.onresult = function(event) {
-      const transcript = event.results[0][0].transcript.trim();
-      document.getElementById("voiceText").textContent = `📝 辨識結果：${transcript}`;
-
-      if (transcript.includes("台大癌醫")) {
-        show('秀出畫面(地址)');
-        document.getElementById("voiceText").textContent += " ✅ 導向：台大癌醫";
-      } else if (transcript.includes("兒子的家")) {
-        show('秀出畫面(地址)-1');
-        document.getElementById("voiceText").textContent += " ✅ 導向：兒子的家";
-      } else {
-        alert("⚠️ 無法辨識，請再說一次『台大癌醫』或『兒子的家』");
+    async function startAssistant() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      if (!recognition) {
+        console.error("❌ 語音辨識 API 不被支援");
+        alert("⚠️ 語音辨識功能不支援此瀏覽器");
+        return;
       }
-    };
 
-    recognition.onerror = function(event) {
-      console.error("❌ 語音辨識錯誤：", event.error);
-      alert("⚠️ 語音辨識錯誤：" + event.error);
-    };
+      recognition.lang = 'zh-TW';
+      recognition.continuous = false;
+      recognition.interimResults = false;
 
+      recognition.onspeechstart = () => console.log("🎙️ 偵測到開始說話");
+      recognition.onspeechend = () => console.log("🔇 偵測到結束說話");
+
+      recognition.onstart = () => {
+        const voiceTextBox = document.getElementById("voiceText");
+        const voiceMessage = document.getElementById("voiceMessage");
+        voiceTextBox.style.opacity = 1;
+        voiceMessage.textContent = "🎙️ 開始語音辨識中...";
+      };
+
+      recognition.onend = () => {
+        const voiceMessage = document.getElementById("voiceMessage");
+        voiceMessage.textContent = "正在處理回應...";
+      };
+
+      recognition.onresult = async (event) => {
+        const transcript = event.results[0][0].transcript.trim();
+        const voiceTextBox = document.getElementById("voiceText");
+        const voiceMessage = document.getElementById("voiceMessage");
+        voiceTextBox.style.opacity = 1;
+        voiceMessage.textContent = `📝 辨識結果：${transcript}`;
+
+        try {
+          const res = await fetch("/ai-assistant", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: transcript })
+          });
+
+          const data = await res.json();
+
+          if (data.reply) {
+            voiceMessage.textContent = `🧠 助理回覆：${data.reply}`;
+          }
+
+          if (data.audio_url) {
+            const audio = new Audio(`${data.audio_url}?t=${Date.now()}`);
+            audio.play().catch(err => console.warn("⚠️ 播放失敗", err));
+          }
+
+          if (data.command) {
+            const cmd = data.command;
+            if (cmd.action === "navigate" && cmd.target) {
+              show(cmd.target);
+            } else if (cmd.action === "fill_location" && cmd.from && cmd.to) {
+              document.getElementById("fromLocation").value = cmd.from;
+              document.getElementById("toLocation").value = cmd.to;
+              show("確認地點頁面");
+            }
+          } else {
+            const lowerQuery = transcript.toLowerCase();
+            if (lowerQuery.includes("訂票") || lowerQuery.includes("客運") || lowerQuery.includes("購票")) {
+              show("公路客運＿選客運");
+            } else if (lowerQuery.includes("計程車")) {
+              show("step3-1-1計程車-長輩版");
+            } else if (lowerQuery.includes("求救")) {
+              show("分享位置給家人(長者版)");
+            }
+          }
+
+          const replyLength = (data.reply || "").length;
+          const duration = 5000 + replyLength * 150;
+
+          setTimeout(() => {
+            voiceMessage.textContent = "請再次點擊語音按鈕進行操作";
+            voiceTextBox.style.opacity = 0;
+          }, duration);
+
+        } catch (err) {
+          console.error("⚠️ 語音助理錯誤：", err);
+          alert("⚠️ 語音助理錯誤");
+        }
+      };
+
+      recognition.start();
+    }
     async function fetchData(endpoint) {
       try {
         const res = await fetch(endpoint);
@@ -563,6 +632,16 @@
       } catch (error) {
         alert('⚠️ 無法連接後端或腳本錯誤');
       }
+    }
+
+    function showFloatingMessage(message) {
+      const voiceTextBox = document.getElementById("voiceText");
+      const voiceMessage = document.getElementById("voiceMessage");
+      voiceMessage.textContent = message;
+      voiceTextBox.style.opacity = 1;
+      setTimeout(() => {
+        voiceTextBox.style.opacity = 0;
+      }, 5000);
     }
   </script>
 
@@ -587,8 +666,13 @@
     window.initAutocomplete = initAutocomplete;
   </script>
 
+
+
   <!-- Google Maps SDK -->
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCcqobiKkZNh_bxL1qg-3inbcPHfQv6l-0&libraries=places&callback=initAutocomplete" async defer></script>
+
+
+
 
 
 
