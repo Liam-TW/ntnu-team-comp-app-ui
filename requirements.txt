@@ -6,3 +6,4 @@ webdriver-manager==4.0.1
 undetected-chromedriver==3.5.5
 openai
 python-dotenv
+pandas
