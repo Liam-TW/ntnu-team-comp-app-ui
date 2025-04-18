@@ -138,6 +138,11 @@
   <h2>公路局交通服務模擬</h2>
   <div class="nav-buttons" id="menu-buttons"></div>
 
+  <div id="consentBanner" style="position: fixed; top: 0; left: 0; width: 100%; background: rgba(0,0,0,0.85); color: white; padding: 1em; text-align: center; z-index: 9999;">
+    請點擊下方按鈕啟用語音錄製與播放功能
+    <button onclick="grantPermissions()" style="margin-left: 1em; padding: 0.5em 1em; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">啟用語音功能</button>
+  </div>
+
   <div class="frame-wrapper">
     <div class="device-frame">
       <div class="device-screen">
@@ -493,6 +498,26 @@
         { label: '叫計程車', id: 'step3-1-1計程車-家人版' }
       ]
     };
+
+    function grantPermissions() {
+      const silentAudio = new Audio();
+      silentAudio.src = '/static/silent.mp3'; // 請確保你有一個靜音 mp3 檔放在 static 資料夾中
+      silentAudio.play().catch(err => console.warn('❌ 播放權限失敗', err));
+
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(stream => {
+            console.log("✅ 麥克風權限已授權");
+            document.getElementById("consentBanner").style.display = "none";
+          })
+          .catch(err => {
+            console.warn("❌ 無法取得麥克風權限", err);
+            alert("請允許使用麥克風才能啟用語音功能。");
+          });
+      } else {
+        alert("您的瀏覽器不支援語音功能。");
+      }
+    }
 
     function renderMenu() {
       const container = document.getElementById('menu-buttons');
